@@ -1,0 +1,23 @@
+Problem
+
+Cilj ovog rada je da se u okviru alata KLEE koji služi za
+simboličko izvršavanje programa i automatsko generisanje test primera, koji vrši analizu nad llvm kodom i koristi SMT rešavač STP za proveravanje uslova ispravnosti koje generiše, pokuša postojeći alat proširiti za novu heuristiku koja bi poboljšala pokrivenosti koda prilikom simboličkog izvršavanja.
+Pri upoređivanju rezultata napisani su testovi koji su pušteni kroz postojeće heuristike kao i kroz našu novoimplementiranu heuristiku.
+
+Arhitektura ovog projekta
+
+https://github.com/salesh/klee direktorijum je glavni direktorijum našeg projekta.
+Celoukupan sadržaj ovog direktorijuma je preuzet sa zvaničnog projekta ovog alata
+https://github.com/klee/klee
+
+U direktorijumu klee/lib/Core/ se nalaze klase koje su proširene po uzoru na ostale funkcije pretrage koje trenutno postoje u samom alatu, kako bi naša pretraga mogla da se izvršava (UserSearcher.cpp..).
+
+Algoritam
+
+Ideja algoritma je da se, prilikom pokretanja klee, označe funkcije u kojima želimo da se vrši DFS pretraga, a da se u ostalim funkcijama izvrši BFS pretraga.
+Da bi algoritam dao dobre rezultate, presudno je da označimo funkcije u kojima će DFS pretraga dati bolje rezultate od BFS, u suprotnom algoritam može da se ponaša totalno drugačije od očekivanog. 
+Naime, ako označimo funkcije u kojima je bolje izvršiti BFS pretragu, algoritam će proći duži put do stanja sa greškom nego da smo pozvali običan BFS pretraživač. 
+
+Klasa ExecutionState je proširena poljem targetFunc (bool) koje označava da li se odgovarajuće stanje nalazi u nekoj od funkcija koje smo označili.
+Ovo polje nam je bitno prilikom ažuriranja niza u kojem čuvamo stanja označenih i niza u kojem čuvamo stanja neoznačenih funkcija. (funkcija TargetSearcher::update u Searcher.cpp)
+Prilikom izbora sledećeg stanja ((funkcija TargetSearcher::selectState u Searcher.cpp)) uvek će se prvo birati stanje iz niza u kome čuvamo stanja iz označenih funkcija i to po principu kako to radi DFS pretraga (uzima se poslednji element), a ako je taj niz prazan uzima se stanje koje je iz niza u kojem čuvamo stanja neoznačenih funkcija po principu kako to radi BFS pretraga (uzima se prvi element).
