@@ -162,7 +162,7 @@ private:
   ExecutionState() : ptreeNode(0) {}
 
 public:
-  ExecutionState(KFunction *kf);
+  ExecutionState(KFunction *kf, searcherType maxType);
 
   // XXX total hack, just used to make a state so solver can
   // use on structure

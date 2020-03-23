@@ -65,7 +65,7 @@ StackFrame::~StackFrame() {
 
 /***/
 
-ExecutionState::ExecutionState(KFunction *kf) :
+ExecutionState::ExecutionState(KFunction *kf,searcherType maxType) :
     pc(kf->instructions),
     prevPC(pc),
     weight(1),
@@ -74,7 +74,7 @@ ExecutionState::ExecutionState(KFunction *kf) :
     coveredNew(false),
     forkDisabled(false),
     ptreeNode(0),
-    s(sRandomSearcher),
+    s(maxType),
     steppedInstructions(0){
   pushFrame(0, kf);
 }
