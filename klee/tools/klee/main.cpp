@@ -323,7 +323,8 @@ private:
   SmallString<128> m_outputDirectory;
 
   searcherType m_maxType;
-  std::vector<std::vector<std::string>> m_allTargetFunctions;
+//   std::vector<std::vector<std::string>> m_allTargetFunctions;
+  std::unordered_map<std::string, searcherType> m_allTargetFunctions;
   unsigned m_numTotalTests;     // Number of tests received from the interpreter
   unsigned m_numGeneratedTests; // Number of tests successfully generated
   unsigned m_pathsExplored; // number of paths explored so far
@@ -363,13 +364,14 @@ public:
   static std::string getRunTimeLibraryPath(const char *argv0);
   void processTargetFunction();
   void fillTargetFunctions(searcherType searchType);
-  const std::vector<std::vector<std::string>>& getAllTargetFunctions();
+//   const std::vector<std::vector<std::string>>& getAllTargetFunctions();
+  const std::unordered_map<std::string, searcherType>& getAllTargetFunctions();
   searcherType getMaxType(){return m_maxType;}
 };
 
 KleeHandler::KleeHandler(int argc, char **argv)
     : m_interpreter(0), m_pathWriter(0), m_symPathWriter(0),
-      m_outputDirectory(),m_allTargetFunctions(MAX_SEARCHERS), m_numTotalTests(0), m_numGeneratedTests(0),
+      m_outputDirectory(),m_allTargetFunctions(), m_numTotalTests(0), m_numGeneratedTests(0),
       m_pathsExplored(0), m_argc(argc), m_argv(argv) {
 
   // create output directory (OutputDir or "klee-out-<i>")
@@ -699,6 +701,31 @@ std::string KleeHandler::getRunTimeLibraryPath(const char *argv0) {
   return libDir.str();
 }
 
+// void KleeHandler::fillTargetFunctions(searcherType searchType){
+//     std::string targetFunction;
+//     if(searchType == sDFS){ //DFS
+//         targetFunction = TargetFunctionDFS;
+//     }else if(searchType == sBFS){//BFS
+//         targetFunction = TargetFunctionBFS;
+//     }else if(searchType == sWRS){//WeightedRandomSearcher
+//         targetFunction = TargetFunctionWRS;
+//     }else if(searchType == sRPS){//RandomPathSearch
+//         targetFunction = TargetFunctionRPS;
+//     }else if(searchType == sRandomSearcher){//RandomSearcher
+//         targetFunction = TargetFunctionRS;
+//     }
+//     while(!targetFunction.empty()){
+//         int pos=targetFunction.find_first_of(',');
+//         std::string s = targetFunction.substr(0,pos).trim();
+//         m_allTargetFunctions[searchType].push_back(s);
+//         if(pos == -1)
+//             return;
+//         targetFunction=targetFunction.substr(pos+1);
+//     }
+//     
+//     return;
+// }
+
 void KleeHandler::fillTargetFunctions(searcherType searchType){
     std::string targetFunction;
     if(searchType == sDFS){ //DFS
@@ -715,7 +742,7 @@ void KleeHandler::fillTargetFunctions(searcherType searchType){
     while(!targetFunction.empty()){
         int pos=targetFunction.find_first_of(',');
         std::string s = targetFunction.substr(0,pos);
-        m_allTargetFunctions[searchType].push_back(s);
+        m_allTargetFunctions[s] = searchType;
         if(pos == -1)
             return;
         targetFunction=targetFunction.substr(pos+1);
@@ -729,22 +756,35 @@ void KleeHandler::processTargetFunction(){
     for(int i = sDFS; i < sNotDet; i++){
         fillTargetFunctions((searcherType)i);
     }
-    int mmax = 0;
-    searcherType maxType = sRandomSearcher;
-    for(int i = sDFS; i < sNotDet; i++){
-       if(mmax < (int)m_allTargetFunctions[i].size()){
-            mmax = m_allTargetFunctions[i].size();
-            maxType = (searcherType)i;
-       }
+    std::vector<int> nums(MAX_SEARCHERS, 0);
+    
+    for(auto &elem : m_allTargetFunctions){
+        if(elem.second == sDFS) nums[sDFS]++;
+        else if(elem.second == sBFS) nums[sBFS]++;
+        else if(elem.second == sBFS) nums[sRandomSearcher]++;
+        else if(elem.second == sBFS) nums[sWRS]++;
+        else if(elem.second == sBFS) nums[sRPS]++;
     }
     
-    m_maxType = maxType;
+    m_maxType = sDFS;
+    int mmax = 0;
+    for(int i = sDFS; i < sNotDet; i++){
+        if(nums[i] > mmax){
+            mmax = nums[i];
+            m_maxType = (searcherType)i;
+        }
+    }
+    
     
     return;
 }
 
 
-const std::vector<std::vector<std::string>>& KleeHandler::getAllTargetFunctions(){
+// const std::vector<std::vector<std::string>>& KleeHandler::getAllTargetFunctions(){
+// 	return m_allTargetFunctions;
+// }
+
+const std::unordered_map<std::string, searcherType>& KleeHandler::getAllTargetFunctions(){
 	return m_allTargetFunctions;
 }
 

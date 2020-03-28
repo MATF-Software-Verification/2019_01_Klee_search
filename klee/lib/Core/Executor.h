@@ -23,6 +23,7 @@
 #include "klee/Internal/System/Time.h"
 #include "klee/util/ArrayCache.h"
 #include "llvm/Support/raw_ostream.h"
+#include "klee/Internal/Support/ErrorHandling.h"
 
 #include "llvm/ADT/Twine.h"
 
@@ -474,46 +475,16 @@ private:
 
   void initTimers();
   void processTimers(ExecutionState *current, time::Span maxInstTime);
-
+  std::unordered_map<std::string, searcherType> allTargetFunctions = interpreterHandler->getAllTargetFunctions();
   searcherType ifTargetFunction(const llvm::Function *f){
       if(!f){
 		  return sNotDet;
 	  }
 	  std::string functionName=f->getName();
-      std::vector<std::vector<std::string>> allTargetFunctions = interpreterHandler->getAllTargetFunctions();
-      for(int i = sDFS; i < sNotDet; i++){
-        for(std::vector<std::string>::iterator it= allTargetFunctions[i].begin(), 
-                                               ie = allTargetFunctions[i].end(); it != ie; it++){
-          switch(i){
-             case sDFS:
-                if(functionName == *it){
-                    return sDFS;
-                }
-                break;
-             case sBFS:
-                if(functionName == *it){
-                    return sBFS;
-                }
-                break;
-             case sWRS:
-                if(functionName == *it){
-                    return sWRS;
-                }
-                break;
-             case sRPS:
-                if(functionName == *it){
-                    return sRPS;
-                }
-                break;
-             case sRandomSearcher:
-                if(functionName == *it){
-                    return sRandomSearcher;
-                }
-                break;
-          }
-        }
-      }
-
+      auto type = allTargetFunctions.find(functionName);
+      if(type != allTargetFunctions.end())
+          return type->second;
+      
       return sNotDet;
   }
   void checkMemoryUsage();

@@ -70,61 +70,74 @@ ExecutionState &TargetSearcher::selectState(){
         return searcherBFS.selectState();
     }else if(!searcherWRS.empty()){
         return searcherWRS.selectState();
-    }else if(!searcherRPS.empty()){
-        return searcherRPS.selectState();
+    }else if(!searcherRandomSearcher.empty()){
+        return searcherRandomSearcher.selectState();
     }
+    return searcherRPS.selectState();
     
-    return searcherRandomSearcher.selectState();
     
 }
 
 void TargetSearcher::update(ExecutionState *current, const std::vector<ExecutionState*> &addedStates,
 		const std::vector<ExecutionState*> &removedStates) {
-    std::vector<ExecutionState*> addedStatesDFS;
-    std::vector<ExecutionState*> addedStatesBFS;
-    std::vector<ExecutionState*> addedStatesRandomSearcher;
-    std::vector<ExecutionState*> addedStatesWRS;
-    std::vector<ExecutionState*> addedStatesRPS;
-    
-    std::vector<ExecutionState*> removedStatesDFS;
-    std::vector<ExecutionState*> removedStatesBFS;
-    std::vector<ExecutionState*> removedStatesRandomSearcher;
-    std::vector<ExecutionState*> removedStatesWRS;
-    std::vector<ExecutionState*> removedStatesRPS;
-    
-    for(std::vector<ExecutionState*>::const_iterator it = addedStates.begin(), ie = addedStates.end();it != ie; ++it){
-        if((*it)->s == sDFS){
-            addedStatesDFS.push_back(*it);
-        }else if((*it)->s == sBFS){
-            addedStatesBFS.push_back(*it);
-        }else if((*it)->s == sRandomSearcher){
-            addedStatesRandomSearcher.push_back(*it);
-        }else if((*it)->s == sWRS){
-            addedStatesWRS.push_back(*it);
-        }else if((*it)->s == sRPS){
-            addedStatesRPS.push_back(*it);
+    int sizeAdded = addedStates.size();
+    int sizeRemoved = removedStates.size();
+    if(sizeAdded != 0 || sizeRemoved != 0){
+        std::vector<ExecutionState*> addedStatesDFS;
+        std::vector<ExecutionState*> addedStatesBFS;
+        std::vector<ExecutionState*> addedStatesWRS;
+        std::vector<ExecutionState*> addedStatesRPS;
+        std::vector<ExecutionState*> addedStatesRandomSearcher;
+        addedStatesDFS.reserve(sizeAdded);
+        addedStatesBFS.reserve(sizeAdded);
+        addedStatesWRS.reserve(sizeAdded);
+        addedStatesRPS.reserve(sizeAdded);
+        addedStatesRandomSearcher.reserve(sizeAdded);
+        
+        std::vector<ExecutionState*> removedStatesDFS;
+        std::vector<ExecutionState*> removedStatesBFS;
+        std::vector<ExecutionState*> removedStatesWRS;
+        std::vector<ExecutionState*> removedStatesRPS;
+        std::vector<ExecutionState*> removedStatesRandomSearcher;
+        removedStatesDFS.reserve(sizeRemoved);
+        removedStatesBFS.reserve(sizeRemoved);
+        removedStatesWRS.reserve(sizeRemoved);
+        removedStatesRPS.reserve(sizeRemoved);
+        removedStatesRandomSearcher.reserve(sizeRemoved);
+        for(std::vector<ExecutionState*>::const_iterator it = addedStates.begin(), ie = addedStates.end();it != ie; ++it){
+            if((*it)->s == sDFS){
+                addedStatesDFS.emplace_back(*it);
+            }else if((*it)->s == sBFS){
+                addedStatesBFS.emplace_back(*it);
+            }else if((*it)->s == sRandomSearcher){
+                addedStatesRandomSearcher.emplace_back(*it);
+            }else if((*it)->s == sWRS){
+                addedStatesWRS.emplace_back(*it);
+            }else if((*it)->s == sRPS){
+                addedStatesRPS.emplace_back(*it);
+            }
         }
-    }
-    
-    for (std::vector<ExecutionState*>::const_iterator it = removedStates.begin(), ie = removedStates.end(); it != ie; ++it) {
-        if((*it)->s == sDFS){
-            removedStatesDFS.push_back(*it);
-        }else if((*it)->s == sBFS){
-            removedStatesBFS.push_back(*it);
-        }else if((*it)->s == sRandomSearcher){
-            removedStatesRandomSearcher.push_back(*it);
-        }else if((*it)->s == sWRS){
-            removedStatesWRS.push_back(*it);
-        }else if((*it)->s == sRPS){
-            removedStatesRPS.push_back(*it);
+        
+        for (std::vector<ExecutionState*>::const_iterator it = removedStates.begin(), ie = removedStates.end(); it != ie; ++it) {
+            if((*it)->s == sDFS){
+                removedStatesDFS.emplace_back(*it);
+            }else if((*it)->s == sBFS){
+                removedStatesBFS.emplace_back(*it);
+            }else if((*it)->s == sRandomSearcher){
+                removedStatesRandomSearcher.emplace_back(*it);
+            }else if((*it)->s == sWRS){
+                removedStatesWRS.emplace_back(*it);
+            }else if((*it)->s == sRPS){
+                removedStatesRPS.emplace_back(*it);
+            }
         }
+
+        searcherDFS.update(current,addedStatesDFS,removedStatesDFS);
+        searcherBFS.update(current,addedStatesBFS,removedStatesBFS);
+        searcherRandomSearcher.update(current,addedStatesRandomSearcher,removedStatesRandomSearcher);
+        searcherWRS.update(current,addedStatesWRS,removedStatesWRS);
+        searcherRPS.update(current,addedStatesRPS,removedStatesRPS);
     }
-    
-    searcherDFS.update(current,addedStatesDFS,removedStatesDFS);
-    searcherBFS.update(current,addedStatesBFS,removedStatesBFS);
-    searcherRandomSearcher.update(current,addedStatesRandomSearcher,removedStatesRandomSearcher);
-    searcherWRS.update(current,addedStatesWRS,removedStatesWRS);
-    searcherRPS.update(current,addedStatesRPS,removedStatesRPS);
 }
 
 

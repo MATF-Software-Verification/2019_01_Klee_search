@@ -47,7 +47,7 @@ public:
                                const char *err,
                                const char *suffix) = 0;
 
-  virtual const std::vector<std::vector<std::string>>& getAllTargetFunctions() = 0;
+  virtual const std::unordered_map<std::string, searcherType>& getAllTargetFunctions() = 0;
 };
 
 class Interpreter {

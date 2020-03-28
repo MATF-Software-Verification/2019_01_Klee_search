@@ -1916,7 +1916,7 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
     }
     searcherType method = ifTargetFunction(f);
     
-    if(method != sNotDet){
+    if(method != sNotDet && method != state.s){
         searcher->removeState(&state);
         state.s = method;
         searcher->addState(&state);
