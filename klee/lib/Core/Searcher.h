@@ -24,6 +24,8 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
 
+#include <random>
+
 namespace llvm {
   class BasicBlock;
   class Function;
@@ -314,22 +316,26 @@ namespace klee {
       WeightedRandomSearcher::WeightType m_typeWRS;
       Executor &m_executor;
       
-      DFSSearcher searcherDFS;
-      BFSSearcher searcherBFS;
-      RandomSearcher searcherRandomSearcher;
-      WeightedRandomSearcher searcherWRS{m_typeWRS};
-      RandomPathSearcher searcherRPS{m_executor};
+      Searcher* searcherDFS;
+      Searcher* searcherBFS;
+      Searcher* searcherRandomSearcher;
+      Searcher* searcherWRS;
+      Searcher* searcherRPS;
+      
+      
+      std::vector<Searcher*> choose;
   public:
-      TargetSearcher(Executor& executor, WeightedRandomSearcher::WeightType typeWRS = WeightedRandomSearcher::MinDistToUncovered);
+      TargetSearcher(Executor& executor,std::vector<bool>& ifSearchers, WeightedRandomSearcher::WeightType typeWRS = WeightedRandomSearcher::MinDistToUncovered);
+      ~TargetSearcher();
 	  ExecutionState &selectState();
 	  void update(ExecutionState *current,
 			  const std::vector<ExecutionState*> &addedStates,
 			  const std::vector<ExecutionState*> &removedStates);
-	  bool empty() { return (searcherDFS.empty() 
-                          && searcherBFS.empty() 
-                          && searcherRandomSearcher.empty() 
-                          && searcherWRS.empty() 
-                          && searcherRPS.empty()); }
+	  bool empty() { return ((searcherDFS?searcherDFS->empty():true) 
+                          && (searcherBFS?searcherBFS->empty():true) 
+                          && (searcherRandomSearcher?searcherRandomSearcher->empty():true) 
+                          && (searcherWRS?searcherWRS->empty():true) 
+                          && (searcherRPS?searcherRPS->empty():true)); }
 	  void printName(llvm::raw_ostream &os) {
 		  os << "TargetSearcher\n";
 	  }

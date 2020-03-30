@@ -246,7 +246,7 @@ private:
   void printFileLine(ExecutionState &state, KInstruction *ki,
                      llvm::raw_ostream &file);
 
-  void run(ExecutionState &initialState);
+  void run(ExecutionState &initialState,std::vector<bool>& ifSearchers);
 
   // Given a concrete object in our [klee's] address space, add it to 
   // objects checked code can reference.
@@ -526,7 +526,7 @@ public:
   }
 
   void runFunctionAsMain(llvm::Function *f, int argc, char **argv,
-                         char **envp,searcherType type) override;
+                         char **envp,searcherType type,std::vector<bool>& ifSearchers) override;
 
   /*** Runtime options ***/
 

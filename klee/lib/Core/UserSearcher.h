@@ -9,7 +9,7 @@
 
 #ifndef KLEE_USERSEARCHER_H
 #define KLEE_USERSEARCHER_H
-
+#include <vector>
 namespace klee {
   class Executor;
   class Searcher;
@@ -19,7 +19,7 @@ namespace klee {
 
   void initializeSearchOptions();
 
-  Searcher *constructUserSearcher(Executor &executor);
+  Searcher *constructUserSearcher(Executor &executor, std::vector<bool>& ifSearchers);
 }
 
 #endif

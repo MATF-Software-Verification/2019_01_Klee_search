@@ -135,7 +135,7 @@ public:
   virtual void runFunctionAsMain(llvm::Function *f,
                                  int argc,
                                  char **argv,
-                                 char **envp,searcherType type) = 0;
+                                 char **envp,searcherType type,std::vector<bool>& ifSearchers) = 0;
 
   /*** Runtime options ***/
 

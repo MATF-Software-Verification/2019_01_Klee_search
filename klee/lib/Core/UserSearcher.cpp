@@ -11,7 +11,7 @@
 
 #include "Searcher.h"
 #include "Executor.h"
-
+#include <vector>
 #include "klee/Internal/Support/ErrorHandling.h"
 #include "klee/SolverCmdLine.h"
 #include "klee/MergeHandler.h"
@@ -117,10 +117,10 @@ bool klee::userSearcherRequiresMD2U() {
 }
 
 
-Searcher *getNewSearcher(Searcher::CoreSearchType type, Executor &executor) {
+Searcher *getNewSearcher(Searcher::CoreSearchType type, Executor &executor,std::vector<bool>& ifSearchers) {
   Searcher *searcher = NULL;
   switch (type) {
-  case Searcher::TargetSearcher: searcher = new TargetSearcher(executor,TypeWRS);break;
+  case Searcher::TargetSearcher: searcher = new TargetSearcher(executor,ifSearchers,TypeWRS);break;
   case Searcher::DFS: searcher = new DFSSearcher(); break;
   case Searcher::BFS: searcher = new BFSSearcher(); break;
   case Searcher::RandomState: searcher = new RandomSearcher(); break;
@@ -136,16 +136,16 @@ Searcher *getNewSearcher(Searcher::CoreSearchType type, Executor &executor) {
   return searcher;
 }
 
-Searcher *klee::constructUserSearcher(Executor &executor) {
+Searcher *klee::constructUserSearcher(Executor &executor,std::vector<bool>& ifSearchers) {
 
-  Searcher *searcher = getNewSearcher(CoreSearch[0], executor);
+  Searcher *searcher = getNewSearcher(CoreSearch[0], executor,ifSearchers);
   
   if (CoreSearch.size() > 1) {
     std::vector<Searcher *> s;
     s.push_back(searcher);
 
     for (unsigned i=1; i<CoreSearch.size(); i++)
-      s.push_back(getNewSearcher(CoreSearch[i], executor));
+      s.push_back(getNewSearcher(CoreSearch[i], executor,ifSearchers));
     
     searcher = new InterleavedSearcher(s);
   }

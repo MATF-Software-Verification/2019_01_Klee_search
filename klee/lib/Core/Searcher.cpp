@@ -45,6 +45,7 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <sstream>
+#include <random>
 
 using namespace klee;
 using namespace llvm;
@@ -59,22 +60,42 @@ Searcher::~Searcher() {
 ///
 
 
-TargetSearcher::TargetSearcher(Executor& executor,WeightedRandomSearcher::WeightType typeWRS)
-    :m_typeWRS(typeWRS),m_executor(executor){}
+TargetSearcher::TargetSearcher(Executor& executor,std::vector<bool>& ifSearchers,WeightedRandomSearcher::WeightType typeWRS)
+    :m_typeWRS(typeWRS),m_executor(executor),choose(MAX_SEARCHERS){
+        ifSearchers[sDFS]? searcherDFS = new DFSSearcher(): searcherDFS = nullptr;
+        ifSearchers[sBFS]? searcherBFS = new BFSSearcher(): searcherBFS = nullptr;
+        ifSearchers[sRandomSearcher]? searcherRandomSearcher = new RandomSearcher():searcherRandomSearcher=nullptr;
+        ifSearchers[sWRS]? searcherWRS = new WeightedRandomSearcher(typeWRS):searcherWRS=nullptr;
+        ifSearchers[sRPS]? searcherRPS = new RandomPathSearcher(executor):searcherRPS=nullptr;
+        choose[0] = searcherDFS;
+        choose[1] = searcherBFS;
+        choose[2] = searcherRandomSearcher;
+        choose[3] = searcherWRS;
+        choose[4] = searcherRPS;
+    }
 
 ExecutionState &TargetSearcher::selectState(){
 
-    if(!searcherDFS.empty()){
-        return searcherDFS.selectState();
-    }else if(!searcherBFS.empty()){
-        return searcherBFS.selectState();
-    }else if(!searcherWRS.empty()){
-        return searcherWRS.selectState();
-    }else if(!searcherRandomSearcher.empty()){
-        return searcherRandomSearcher.selectState();
-    }
-    return searcherRPS.selectState();
-    
+        if(searcherDFS && !searcherDFS->empty()){
+            return searcherDFS->selectState();
+        }else if(searcherBFS && !searcherBFS->empty()){
+            return searcherBFS->selectState();
+        }else if(searcherWRS && !searcherWRS->empty()){
+            return searcherWRS->selectState();
+        }else if(searcherRandomSearcher && !searcherRandomSearcher->empty()){
+            return searcherRandomSearcher->selectState();
+        }else if(searcherRPS && !searcherRPS->empty()){
+            return searcherRPS->selectState();
+        }
+
+//ako se koristi nacin nasumicnog biranja koja ce pretraga sledeca da pozove fju selectState (zakomentarisati prethodno i otkomentarisati ovo ispod)
+//         auto rng = std::default_random_engine {};
+//         std::shuffle(std::begin(choose), std::end(choose), rng);
+//         for(auto &elem: choose){
+//             if(elem && !elem->empty())
+//                 return elem->selectState();
+//         }
+        
     
 }
 
@@ -131,17 +152,20 @@ void TargetSearcher::update(ExecutionState *current, const std::vector<Execution
                 removedStatesRPS.emplace_back(*it);
             }
         }
-
-        searcherDFS.update(current,addedStatesDFS,removedStatesDFS);
-        searcherBFS.update(current,addedStatesBFS,removedStatesBFS);
-        searcherRandomSearcher.update(current,addedStatesRandomSearcher,removedStatesRandomSearcher);
-        searcherWRS.update(current,addedStatesWRS,removedStatesWRS);
-        searcherRPS.update(current,addedStatesRPS,removedStatesRPS);
+        if(searcherDFS) searcherDFS->update(current,addedStatesDFS,removedStatesDFS);
+        if(searcherBFS) searcherBFS->update(current,addedStatesBFS,removedStatesBFS);
+        if(searcherRandomSearcher) searcherRandomSearcher->update(current,addedStatesRandomSearcher,removedStatesRandomSearcher);
+        if(searcherWRS) searcherWRS->update(current,addedStatesWRS,removedStatesWRS);
+        if(searcherRPS) searcherRPS->update(current,addedStatesRPS,removedStatesRPS);
     }
 }
 
 
-
+TargetSearcher::~TargetSearcher() {
+  for (std::vector<Searcher*>::const_iterator it = choose.begin(),
+         ie = choose.end(); it != ie; ++it)
+    delete *it;
+}
 ///
 
 

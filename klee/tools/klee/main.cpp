@@ -323,8 +323,8 @@ private:
   SmallString<128> m_outputDirectory;
 
   searcherType m_maxType;
-//   std::vector<std::vector<std::string>> m_allTargetFunctions;
   std::unordered_map<std::string, searcherType> m_allTargetFunctions;
+  std::vector<bool> ifSearchers;
   unsigned m_numTotalTests;     // Number of tests received from the interpreter
   unsigned m_numGeneratedTests; // Number of tests successfully generated
   unsigned m_pathsExplored; // number of paths explored so far
@@ -364,16 +364,16 @@ public:
   static std::string getRunTimeLibraryPath(const char *argv0);
   void processTargetFunction();
   void fillTargetFunctions(searcherType searchType);
-//   const std::vector<std::vector<std::string>>& getAllTargetFunctions();
   const std::unordered_map<std::string, searcherType>& getAllTargetFunctions();
   searcherType getMaxType(){return m_maxType;}
+  std::vector<bool>& getIfSearchers(){return ifSearchers;}
 };
 
 KleeHandler::KleeHandler(int argc, char **argv)
     : m_interpreter(0), m_pathWriter(0), m_symPathWriter(0),
-      m_outputDirectory(),m_allTargetFunctions(), m_numTotalTests(0), m_numGeneratedTests(0),
+      m_outputDirectory(),m_allTargetFunctions(),ifSearchers(MAX_SEARCHERS,false), m_numTotalTests(0), m_numGeneratedTests(0),
       m_pathsExplored(0), m_argc(argc), m_argv(argv) {
-
+//   ifSearchers{MAX_SEARCHERS,false};
   // create output directory (OutputDir or "klee-out-<i>")
   bool dir_given = OutputDir != "";
   SmallString<128> directory(dir_given ? OutputDir : InputFile);
@@ -701,30 +701,6 @@ std::string KleeHandler::getRunTimeLibraryPath(const char *argv0) {
   return libDir.str();
 }
 
-// void KleeHandler::fillTargetFunctions(searcherType searchType){
-//     std::string targetFunction;
-//     if(searchType == sDFS){ //DFS
-//         targetFunction = TargetFunctionDFS;
-//     }else if(searchType == sBFS){//BFS
-//         targetFunction = TargetFunctionBFS;
-//     }else if(searchType == sWRS){//WeightedRandomSearcher
-//         targetFunction = TargetFunctionWRS;
-//     }else if(searchType == sRPS){//RandomPathSearch
-//         targetFunction = TargetFunctionRPS;
-//     }else if(searchType == sRandomSearcher){//RandomSearcher
-//         targetFunction = TargetFunctionRS;
-//     }
-//     while(!targetFunction.empty()){
-//         int pos=targetFunction.find_first_of(',');
-//         std::string s = targetFunction.substr(0,pos).trim();
-//         m_allTargetFunctions[searchType].push_back(s);
-//         if(pos == -1)
-//             return;
-//         targetFunction=targetFunction.substr(pos+1);
-//     }
-//     
-//     return;
-// }
 
 void KleeHandler::fillTargetFunctions(searcherType searchType){
     std::string targetFunction;
@@ -739,6 +715,7 @@ void KleeHandler::fillTargetFunctions(searcherType searchType){
     }else if(searchType == sRandomSearcher){//RandomSearcher
         targetFunction = TargetFunctionRS;
     }
+    if(!targetFunction.empty()) ifSearchers[(int)searchType] = true;
     while(!targetFunction.empty()){
         int pos=targetFunction.find_first_of(',');
         std::string s = targetFunction.substr(0,pos);
@@ -780,9 +757,6 @@ void KleeHandler::processTargetFunction(){
 }
 
 
-// const std::vector<std::vector<std::string>>& KleeHandler::getAllTargetFunctions(){
-// 	return m_allTargetFunctions;
-// }
 
 const std::unordered_map<std::string, searcherType>& KleeHandler::getAllTargetFunctions(){
 	return m_allTargetFunctions;
@@ -1533,7 +1507,7 @@ int main(int argc, char **argv, char **envp) {
                    << " bytes)"
                    << " (" << ++i << "/" << kTestFiles.size() << ")\n";
       // XXX should put envp in .ktest ?
-      interpreter->runFunctionAsMain(mainFn, out->numArgs, out->args, pEnvp,handler->getMaxType());
+      interpreter->runFunctionAsMain(mainFn, out->numArgs, out->args, pEnvp,handler->getMaxType(),handler->getIfSearchers());
       if (interrupted) break;
     }
     interpreter->setReplayKTest(0);
@@ -1582,7 +1556,7 @@ int main(int argc, char **argv, char **envp) {
                    sys::StrError(errno).c_str());
       }
     }
-    interpreter->runFunctionAsMain(mainFn, pArgc, pArgv, pEnvp,handler->getMaxType());
+    interpreter->runFunctionAsMain(mainFn, pArgc, pArgv, pEnvp,handler->getMaxType(),handler->getIfSearchers());
 
     while (!seeds.empty()) {
       kTest_free(seeds.back());

@@ -2872,7 +2872,7 @@ void Executor::doDumpStates() {
   updateStates(nullptr);
 }
 
-void Executor::run(ExecutionState &initialState) { 
+void Executor::run(ExecutionState &initialState,std::vector<bool>& ifSearchers) { 
   bindModuleConstants();
 
   // Delay init till now so that ticks don't accrue during
@@ -2952,7 +2952,7 @@ void Executor::run(ExecutionState &initialState) {
     }
   }
 
-  searcher = constructUserSearcher(*this);
+  searcher = constructUserSearcher(*this,ifSearchers);
 
   std::vector<ExecutionState *> newStates(states.begin(), states.end());
   searcher->update(0, newStates, std::vector<ExecutionState *>());
@@ -3757,7 +3757,7 @@ void Executor::executeMakeSymbolic(ExecutionState &state,
 void Executor::runFunctionAsMain(Function *f,
 				 int argc,
 				 char **argv,
-				 char **envp,searcherType type) {
+				 char **envp,searcherType type,std::vector<bool>& ifSearchers) {
   std::vector<ref<Expr> > arguments;
   
   // force deterministic initialization of memory objects
@@ -3847,7 +3847,7 @@ void Executor::runFunctionAsMain(Function *f,
 
   processTree = new PTree(state);
   state->ptreeNode = processTree->root;
-  run(*state);
+  run(*state,ifSearchers);
   delete processTree;
   processTree = 0;
 
