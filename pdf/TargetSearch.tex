@@ -157,7 +157,7 @@ cl::opt<std::string>
   TargetFunctionDFS("target-dfs",cl::desc("Target Functions for DFS"),cl::init(""));
 \end{lstlisting}
 Ovde je implementirana još jedna bitna funkcionalnost, a to je manipulacija funkcijama koje je korisnik naveo. Ona je postignuta funkcijom \textit{processTargetFunction} koja popunjava matricu funkcijama koje je korisnik naveo korišćenjem funkcije \textit{fillTargetFunctions}
-\begin{lstlisting}[title={Popunjavanje matrice}]
+\begin{lstlisting}[title={Popunjavanje mape}]
     while(!targetFunction.empty()){
         int pos=targetFunction.find_first_of(',');
         std::string s = targetFunction.substr(0,pos);
@@ -243,45 +243,23 @@ Ovo unapređenje je implementirano tako što smo umesto čuvanja stanja u jednom
 
 Implementacija funkcije koja reaguje na svako pojavljivanje funkcije u kodu koja je navedena od strane korisnika napisana je u fajlu ``Executor.h``. U pitanju je funkcija \textit{ifTargetFunction} i ona ima za cilj da odredi kojoj pretrazi ta funkcija pripada.
 \begin{lstlisting}[title={Provera kojoj pretrazi funkcija treba da pripada}]
-   for(int i = sDFS; i < sNotDet; i++){
-        for(std::vector<std::string>::iterator it= allTargetFunctions[i].begin(), 
-                                               ie = allTargetFunctions[i].end(); it != ie; it++){
-          switch(i){
-             case sDFS:
-                if(functionName == *it){
-                    return sDFS;
-                }
-                break;
-             case sBFS:
-                if(functionName == *it){
-                    return sBFS;
-                }
-                break;
-             case sWRS:
-                if(functionName == *it){
-                    return sWRS;
-                }
-                break;
-             case sRPS:
-                if(functionName == *it){
-                    return sRPS;
-                }
-                break;
-             case sRandomSearcher:
-                if(functionName == *it){
-                    return sRandomSearcher;
-                }
-                break;
-          }
-        }
-      }
-
- return sNotDet;
+   searcherType ifTargetFunction(const llvm::Function *f){
+      if(!f){
+		  return sNotDet;
+	  }
+	  std::string functionName=f->getName();
+      auto type = allTargetFunctions.find(functionName);
+      if(type != allTargetFunctions.end())
+          return type->second;
+      
+      return sNotDet;
+  }
 \end{lstlisting}
 
 
 ``Executor.cpp`` je fajl u kojem je rešen problem prelaska jednog načina pretrage u drugi nad istim stanjem. Kao što smo već rekli, koristimo pet vektora i neophodno je postarati se da se trenutno stanje nalazi u pravom vektoru. Zahvaljući prethodno opisanoj funkciji, znamo u koji vektor treba da smestimo trenutno stanje.
 
+\newpage
 \begin{lstlisting}[title={Prebacivanje stanja u odgovarajući vektor}]
     searcherType method = ifTargetFunction(f);
     
