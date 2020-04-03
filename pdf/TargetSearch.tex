@@ -1,4 +1,4 @@
-﻿% !TEX encoding = UTF-8 Unicode
+% !TEX encoding = UTF-8 Unicode
 \documentclass[a4paper]{article}
 
 \usepackage{color}
@@ -90,7 +90,7 @@ Simboličko izvršavanje programa predstavlja izvršavanje programa sa simbolima
 
 \begin{figure}
     \centering
-    \includegraphics[scale=1.0]{stabloIzvrsavanja.png}
+    \includegraphics[scale=1.0]{Slike/stabloIzvrsavanja.png}
     \caption{Stablo izvršavanja}
     \label{fig:stablo}
 \end{figure}
@@ -129,17 +129,17 @@ Poslednji argument komandne linije je program koji testiramo koji je prethodno p
 Kroz sekcije \ref{subsec:impl} i \ref{subsec:rez} biće prikazano na koji način su sve ove mogućnosti postignute kao i upoređivanje rezultata našeg algoritma u odnosu na rezultate korišćenja pretraga koje nudi alat KLEE.
 \newpage
 \subsection{Implementacija}\label{subsec:impl}
-U ovom odeljku će detaljnije biti objašnjeno kako je algoritam konstruisan, to jest koji su fajlovi izmenjeni i koje su funkcionalnosti dodate. \\
+U ovom odeljku će detaljnije biti objašnjeno kako je algoritam konstruisan, to jest koje su datoteke izmenjene i koje su funkcionalnosti dodate. \\
 
-Počećemo od fajla ``ExecutionState.h``. Ovde je bilo neophodno definisati kojim sve načinima pretrage može biti izvršeno neko stanje. Zato smo iskoristili tip $enum$ prilikom definisanja pet vrsti pretraga koje smo spominjali u sekciji \ref{sec:Target}.
+Počećemo od datoteke ``ExecutionState.h``. Ovde je bilo neophodno definisati kojim sve načinima pretrage može biti izvršeno neko stanje. Zato smo iskoristili tip $enum$ prilikom definisanja pet vrsti pretraga koje smo spominjali u sekciji \ref{sec:Target}.
 \begin{lstlisting}
 enum searcherType {sDFS,sBFS,sWRS,sRPS,sRandomSearcher,sNotDet};
 \end{lstlisting}
 Na primeru se može videti i oznaka \textit{sNotDet} koju do sada nismo spominjali jer nije važna za razumevanje algoritma već služi isključivo implementaciji.\\
 
-Incijalizacija svih stanja na podrazumevanu vrstu pretrage je izvršena u fajlu ``ExecutionState.cpp``. Podrazumevanom pretragom se smatra ona pretraga koja je od strane korisnika dobila najveći broj funkcija, kao što smo to prethodno naveli.
+Incijalizacija svih stanja na podrazumevanu vrstu pretrage je izvršena u datoteci ``ExecutionState.cpp``. Podrazumevanom pretragom se smatra ona pretraga koja je od strane korisnika dobila najveći broj funkcija, kao što smo to prethodno naveli.
 
-``Interpreter.h`` fajlu je dodata virtualna funkcija koja za cilj ima da vrati sve funkcije koje je korisnik eksplicitno naveo želeći da ih izvrši navedenim vrstama pretrage.
+``Interpreter.h`` datoteci je dodata virtualna funkcija koja za cilj ima da vrati sve funkcije koje je korisnik eksplicitno naveo želeći da ih izvrši navedenim vrstama pretrage.
 \begin{lstlisting}
 virtual const std::unordered_map<std::string, searcherType>& getAllTargetFunctions() = 0;
 \end{lstlisting}
@@ -151,7 +151,7 @@ virtual void runFunctionAsMain(llvm::Function *f,
                                  char **envp,searcherType type,std::vector<bool>& ifSearchers) = 0;
 \end{lstlisting}
 
-Mogućnost da kao argumente komandne linije zadajemo vrste pretrage je implementirana u fajlu ``main.cpp`` 
+Mogućnost da kao argumente komandne linije zadajemo vrste pretrage je implementirana u datoteci ``main.cpp`` 
 \begin{lstlisting}[title={Definisanje imena pretrage za komandnu liniju}]
 cl::opt<std::string>
   TargetFunctionDFS("target-dfs",cl::desc("Target Functions for DFS"),cl::init(""));
@@ -178,23 +178,24 @@ a zatim i određuje najučestaliju pretragu.
     }
 \end{lstlisting}
 
-Modifikovanjem fajla ``UserSearcher.cpp`` izvršeno je instanciranje TargetSearch klase. Razlika u odnosu na projekat koji unapređujemo je ta što se konstruktoru klase TargetSearch dodaje argument typeWRS za slučaj da korisnik želi neke funkcije da izvrši WeightedRandom pretragom.
+Modifikovanjem datoteke ``UserSearcher.cpp`` izvršeno je instanciranje TargetSearch klase. Razlika u odnosu na projekat koji unapređujemo je ta što se konstruktoru klase TargetSearch dodaje argument typeWRS za slučaj da korisnik želi neke funkcije da izvrši WeightedRandom pretragom.
 
-Klasu čiju smo instancu malopre pomenuli smo morali negde i da definišemo. To smo uradili u fajlu ``Searcher.h``. Pomenuti argument za WeightedRandom pretragu ne mora da se navede, u tom slučaju podrazumevana vrednost je minDistUncovered. 
+Klasu čiju smo instancu malopre pomenuli smo morali negde i da definišemo. To smo uradili u datoteci ``Searcher.h``. Pomenuti argument za WeightedRandom pretragu ne mora da se navede, u tom slučaju podrazumevana vrednost je minDistUncovered. 
 \begin{lstlisting}[title={TargetSearcher klasa}, label={lst:kod}]
 class TargetSearcher : public Searcher{
       WeightedRandomSearcher::WeightType m_typeWRS;
       Executor &m_executor;
       
-      DFSSearcher searcherDFS;
-      BFSSearcher searcherBFS;
-      RandomSearcher searcherRandomSearcher;
-      WeightedRandomSearcher searcherWRS{m_typeWRS};
-      RandomPathSearcher searcherRPS{m_executor};
+      Searcher* searcherDFS;
+      Searcher* searcherBFS;
+      Searcher* searcherRandomSearcher;
+      Searcher* searcherWRS;
+      Searcher* searcherRPS;
+      
       
       std::vector<Searcher*> choose;
   public:
-      TargetSearcher(Executor& executor, std::vector<bool>& ifSearchers, WeightedRandomSearcher::WeightType typeWRS = WeightedRandomSearcher::MinDistToUncovered);
+      TargetSearcher(Executor& executor,std::vector<bool>& ifSearchers, WeightedRandomSearcher::WeightType typeWRS = WeightedRandomSearcher::MinDistToUncovered);
       ~TargetSearcher();
 	  ExecutionState &selectState();
 	  void update(ExecutionState *current,
@@ -209,9 +210,10 @@ class TargetSearcher : public Searcher{
 		  os << "TargetSearcher\n";
 	  }
   };
+}
 \end{lstlisting}
 
-Drugo bitno unapređenje rada na koji referišemo je implementirano u fajlu ``Searcher.cpp``, jer se umesto imitacije pretraga koristi postojeća implementacija pretraga KLEE-a. 
+Drugo bitno unapređenje rada na koji referišemo je implementirano u datoteci ``Searcher.cpp``, jer se umesto imitacije pretraga koristi postojeća implementacija pretraga KLEE-a. 
 
 \newpage
 \begin{lstlisting}[title={Odabir sledećeg stanja}]
@@ -241,7 +243,7 @@ Kao i u slučaju odabira sledećeg stanja, tako je i funkcija update pozivana za
 
 Ovo unapređenje je implementirano tako što smo umesto čuvanja stanja u jednom vektoru(što je do sada bio slučaj jer je korišćena jedna pretraga) stanja čuvali u mapi sa vrstom pretrage kojom treba da budu obiđena. Neophodno je bilo da kao polja klase TargetSearcher dodamo pet željenih pretraga, što se može videti u kodu \ref{lst:kod}. 
 
-Implementacija funkcije koja reaguje na svako pojavljivanje funkcije u kodu koja je navedena od strane korisnika napisana je u fajlu ``Executor.h``. U pitanju je funkcija \textit{ifTargetFunction} i ona ima za cilj da odredi kojoj pretrazi ta funkcija pripada.
+Implementacija funkcije koja reaguje na svako pojavljivanje funkcije u kodu koja je navedena od strane korisnika napisana je u datoteci ``Executor.h``. U pitanju je funkcija \textit{ifTargetFunction} i ona ima za cilj da odredi kojoj pretrazi ta funkcija pripada.
 \begin{lstlisting}[title={Provera kojoj pretrazi funkcija treba da pripada}]
    searcherType ifTargetFunction(const llvm::Function *f){
       if(!f){
@@ -257,7 +259,7 @@ Implementacija funkcije koja reaguje na svako pojavljivanje funkcije u kodu koja
 \end{lstlisting}
 
 
-``Executor.cpp`` je fajl u kojem je rešen problem prelaska jednog načina pretrage u drugi nad istim stanjem. Kao što smo već rekli, koristimo pet vektora i neophodno je postarati se da se trenutno stanje nalazi u pravom vektoru. Zahvaljući prethodno opisanoj funkciji, znamo u koji vektor treba da smestimo trenutno stanje.
+``Executor.cpp`` je datoteka u kojoj je rešen problem prelaska jednog načina pretrage u drugi nad istim stanjem. Kao što smo već rekli, koristimo pet vektora i neophodno je postarati se da se trenutno stanje nalazi u pravom vektoru. Zahvaljući prethodno opisanoj funkciji, znamo u koji vektor treba da smestimo trenutno stanje.
 
 \newpage
 \begin{lstlisting}[title={Prebacivanje stanja u odgovarajući vektor}]
@@ -271,16 +273,16 @@ Implementacija funkcije koja reaguje na svako pojavljivanje funkcije u kodu koja
 \end{lstlisting}
 
 \subsection{Rezultati}\label{subsec:rez}
-Nakon što smo videli kako algoritam funkcioniše i na koji način smo to postigli, sada je red došao da ga uporedimo sa postojećim algoritmima KLEE-a. Fajl nad kojim smo vršili testiranje se sastoji od sedam funkcija. Svaka od tih funkcija je specijalno prilagođena određenim strategijama pretrage sa ciljem da se demonstrira moć našeg algoritma. U svakoj funkciji se nalazi greška koju KLEE treba da prepozna.\\
-Prvo ćemo prikazati rezultate primene našeg algoritma pretrage \ref{fig:target}. Komanda koju smo iskoristili da bismo pokrenuli našu pretragu za fajl nad kojim vršimo testiranje je sledeća:
+Nakon što smo videli kako algoritam funkcioniše i na koji način smo to postigli, sada je red došao da ga uporedimo sa postojećim algoritmima KLEE-a. Datoteka nad kojom smo vršili testiranje se sastoji od sedam funkcija. Svaka od tih funkcija je specijalno prilagođena određenim strategijama pretrage sa ciljem da se demonstrira moć našeg algoritma. U svakoj funkciji se nalazi greška koju KLEE treba da prepozna.\\
+Prvo ćemo prikazati rezultate primene našeg algoritma pretrage \ref{fig:target}. Komanda koju smo iskoristili da bismo pokrenuli našu pretragu nad datotekom koju testiramo je sledeća:
 
-\begin{tcolorbox}[title={Primer poziva TargetSearch algoritma nad test fajlom}]
+\begin{tcolorbox}[title={Primer poziva TargetSearch algoritma nad test datotekom}]
 klee  --search=target-searcher  --target-dfs=f4,f5,f6  --target-bfs=f7  --target-rs=f1  --target-rps=f8  --target-wrs=f8  --type-wrs=Depth targetSearcherTest.bc 
 \end{tcolorbox}
 
 \begin{figure}[h]
     \centering
-    \includegraphics[scale=0.5]{TargetSearch.png}
+    \includegraphics[scale=0.5]{Slike/TargetSearch.png}
     \caption{TargetSearch}
     \label{fig:target}
 \end{figure}
@@ -288,7 +290,7 @@ klee  --search=target-searcher  --target-dfs=f4,f5,f6  --target-bfs=f7  --target
 
 \noindent TargetSearch strategiju smo primenili i u slučaju kada nismo naveli sve funkcije. Kao što je već pomenuto nenavedene funkcije će biti pretražene onom strategijom koja u pozivu ima najveći broj funkcija da pretraži. Primer poziva možete videti ispod.
 
-\begin{tcolorbox}[title={Primer poziva TargetSearch algoritma nad test fajlom}]
+\begin{tcolorbox}[title={Primer poziva TargetSearch algoritma nad test datotekom}]
 klee  --search=target-searcher  --target-dfs=f4,f5,f6  --target-bfs=f7 targetSearcherTest.bc 
 \end{tcolorbox}
 Rezultate koje smo dobili nakon poziva ove komande možete videti ovde \ref{fig:target2}
@@ -296,7 +298,7 @@ Rezultate koje smo dobili nakon poziva ove komande možete videti ovde \ref{fig:
 Vidimo da su dobijeni rezultati u ovom slučaju bolji nego u prethodnom slučaju. Razlog za tako nešto je to što se prilikom poziva random-path i random-state strategija pravi veliki broj stanja koja usporavaju izvršavanje algoritma.  
 \begin{figure}[!htb]
     \centering
-    \includegraphics[scale=0.5]{TargetSearchDfsBfs.png}
+    \includegraphics[scale=0.5]{Slike/TargetSearchDfsBfs.png}
     \caption{TargetSearch2}
     \label{fig:target2}
 \end{figure}
@@ -307,7 +309,7 @@ Vidimo da su dobijeni rezultati u ovom slučaju bolji nego u prethodnom slučaju
 
 \begin{figure}[!htb]
     \centering
-    \includegraphics[scale=0.5]{dfs.png}
+    \includegraphics[scale=0.5]{Slike/dfs.png}
     \caption{DFS}
     \label{fig:dfs}
 \end{figure}
@@ -315,7 +317,7 @@ Vidimo da su dobijeni rezultati u ovom slučaju bolji nego u prethodnom slučaju
 
 \begin{figure}[!htb]
     \centering
-    \includegraphics[scale=0.5]{bfs.png}
+    \includegraphics[scale=0.5]{Slike/bfs.png}
     \caption{BFS}
     \label{fig:bfs}
 \end{figure}
@@ -323,7 +325,7 @@ Vidimo da su dobijeni rezultati u ovom slučaju bolji nego u prethodnom slučaju
 
 \begin{figure}[!htb]
     \centering
-    \includegraphics[scale=0.5]{rs.png}
+    \includegraphics[scale=0.5]{Slike/rs.png}
     \caption{Random State}
     \label{fig:rs}
 \end{figure}
@@ -331,7 +333,7 @@ Vidimo da su dobijeni rezultati u ovom slučaju bolji nego u prethodnom slučaju
 
 \begin{figure}[!htb]
     \centering
-    \includegraphics[scale=0.5]{rps.png}
+    \includegraphics[scale=0.5]{Slike/rps.png}
     \caption{Random Path}
     \label{fig:rps}
 \end{figure}
@@ -339,7 +341,7 @@ Vidimo da su dobijeni rezultati u ovom slučaju bolji nego u prethodnom slučaju
 
 \begin{figure}[!htb]
     \centering
-    \includegraphics[scale=0.5]{wrs.png}
+    \includegraphics[scale=0.5]{Slike/wrs.png}
     \caption{Weighted Random}
     \label{fig:wrs}
 \end{figure}
